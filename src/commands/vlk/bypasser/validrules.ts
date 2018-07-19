@@ -30,7 +30,7 @@ sfdx vlk:bypasser:validrules -u someOrg -n Other_Bypasser_Name__c
         this.bypasserName = this.flags.name || this.DEFAULT_BYPASSER;
         this.bypasserName = this.bypasserName.toLowerCase();
 
-        this.ux.styledHeader(`Looking for "${this.bypasserName}" bypasser`);
+        this.ux.styledHeader(`Looking for "${this.bypasserName}" bypasser in ${this.flags.objects || 'all objects'}`);
 
         const conn = await this.org.getConnection();
 
@@ -62,7 +62,13 @@ sfdx vlk:bypasser:validrules -u someOrg -n Other_Bypasser_Name__c
         this.ux.styledHeader(`There are ${this.invalidRules.length}/${this.activeRules} active, non-managed, validation rules without bypassers.`);
 
         if (this.invalidRules.length && await this.ux.confirm('Want to see the detail?')) {
-            this.printResultTable();
+
+            this.ux.table(this.invalidRules, {
+                columns: [
+                    { key: 'sobj' },
+                    { key: 'fullName' }
+                ]
+            });
         }
     }
 
@@ -123,7 +129,7 @@ sfdx vlk:bypasser:validrules -u someOrg -n Other_Bypasser_Name__c
                         this.activeRules++;
 
                         if (!this.doesHaveBypasser(validationRule)) {
-                            validationRule._sobj = objDescribe.fullName;
+                            validationRule.sobj = objDescribe.fullName;
                             this.invalidRules.push(validationRule);
                         }
                     }
@@ -139,26 +145,5 @@ sfdx vlk:bypasser:validrules -u someOrg -n Other_Bypasser_Name__c
      */
     private doesHaveBypasser(validationRule: any): boolean {
         return validationRule.errorConditionFormula.toLowerCase().indexOf(`$setup.${this.bypasserName}`) >= 0;
-    }
-
-    
-    /**
-     * Print the invalid rules result table in the terminal
-     */
-    private printResultTable(): void {
-
-        let rows = [];
-
-        for (let invalidRule of this.invalidRules) {
-            rows.push({
-                sobj: invalidRule._sobj,
-                name: invalidRule.fullName
-            });
-        }
-
-        this.ux.table(rows, {columns: [
-            { key: 'sobj'},
-            { key: 'name'}
-        ]});
     }
 }
