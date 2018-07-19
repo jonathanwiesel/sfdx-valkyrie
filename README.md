@@ -41,13 +41,18 @@ USAGE
   $ valkyrie vlk:bypasser:validrules
 
 OPTIONS
+  -n, --name=name                                 specify the bypasser name to search. Bypasser__c is the default
+  -o, --objects=objects                           search in specified objects. Separate by comma if many
   -u, --targetusername=targetusername             username or alias for the target org; overrides default target org
   --apiversion=apiversion                         override the api version used for api requests made by this command
   --json                                          format output as json
   --loglevel=(trace|debug|info|warn|error|fatal)  logging level for this command invocation
 
 EXAMPLE
+
   sfdx vlk:bypasser:validrules -u someOrg
+  sfdx vlk:bypasser:validrules -u someOrg -o Account,Contact
+  sfdx vlk:bypasser:validrules -u someOrg -n Other_Bypasser_Name__c
 ```
 
 _See code: [src/commands/vlk/bypasser/validrules.ts](https://gitlab.com/jonathanwiesel/valkyrie/blob/v0.0.1/src/commands/vlk/bypasser/validrules.ts)_

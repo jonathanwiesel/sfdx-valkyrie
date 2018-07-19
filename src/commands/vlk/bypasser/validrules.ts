@@ -1,91 +1,102 @@
 import { SfdxCommand } from '@salesforce/command';
-import { cli } from 'cli-ux';
 
 export default class ValidRules extends SfdxCommand {
 
     public static description = 'Scan for bypassers in validation rules';
-
-    public static examples = [
-    `sfdx vlk:bypasser:validrules -u someOrg
+    public static examples = [`
+sfdx vlk:bypasser:validrules -u someOrg
+sfdx vlk:bypasser:validrules -u someOrg -o Account,Contact
+sfdx vlk:bypasser:validrules -u someOrg -n Other_Bypasser_Name__c
     `];
 
     protected static requiresUsername = true;
-    protected static flagsConfig = {};
     protected static requiresProject = false;
+    protected static flagsConfig = {
+        objects: {char: 'o', type: 'string', description: 'search in specified objects. Separate by comma if many'},
+        name: {char: 'n', type: 'string', description: 'specify the bypasser name to search. Bypasser__c is the default'}
+    };
 
-    private DEFAULT_BYPASSER = '$setup.bypass_general__c';
+
+    private DEFAULT_BYPASSER = 'bypasser__c';
+    private METADATA_READ_MAX_SIZE = 10;
+
+    private totalSObjs = 0;
+    private activeRules = 0;
+    private invalidRules = [];
+    private bypasserName: string;
 
     public async run(): Promise<any> {
 
-        //TODO: bypasser name can be passed as a parameter in case the name is different
-        //      specific objets can be passed as a parameter to only check for those
-        //      ability to export results to a file so the final user can take corrective measures
-        //      progress indicator since iterating over all object would take a while
+        this.bypasserName = this.flags.name || this.DEFAULT_BYPASSER;
+        this.bypasserName = this.bypasserName.toLowerCase();
+
+        this.ux.styledHeader(`Looking for "${this.bypasserName}" bypasser`);
 
         const conn = await this.org.getConnection();
-        const types = [{type: 'CustomObject', folder: null}];
 
-        cli.action.start('Getting available sobjects...');
-        const sobjsData = await conn.metadata.list(types, await this.org.retrieveMaxApiVersion());
-        cli.action.stop();
-
-        const sobjs = sobjsData.map(item => item.fullName);
+        const sobjs = this.flags.objects ? this.flags.objects.split(',') :
+                    await this.getSobjectsToSearch(conn);
         
-        let sobjGroups = this.getSObjSubgroups(sobjs);
+        const sobjGroups = this.getSObjSubgroups(sobjs);
 
-        let activeRules = 0;
-        let invalidRules = [];
-        let loopCounter = 1;
+        let loopCounter = 0;
 
+        this.ux.startSpinner('Getting sobjects details');
         for (const sobjGroup of sobjGroups) {
 
-            cli.action.start('Getting sobjects details ' + loopCounter + '/' + sobjGroups.length + '...');
+            loopCounter += sobjGroup.length;
+            
+            this.ux.setSpinnerStatus(`${loopCounter}/${this.totalSObjs}`);
 
             let objsDescribe = await conn.metadata.read('CustomObject', sobjGroup);
-
-            cli.action.stop();
 
             if (!(objsDescribe instanceof Array)) {
                 objsDescribe = [objsDescribe];
             }
 
-            for (let objDescribe of objsDescribe) {
-
-                if (objDescribe['validationRules'] && objDescribe['validationRules'].length) {
-
-                    for (const validationRule of objDescribe['validationRules']) {
-                        
-                        if (validationRule.active === 'true') {
-                            
-                            activeRules++;
-
-                            if (!this.doesHaveBypasser(validationRule)) {
-                                invalidRules.push(validationRule);
-                            }
-                        }
-                    }
-                }
-            }
-
-            loopCounter++;
+            this.processObjectDescriptions(objsDescribe);
         }
 
+        this.ux.stopSpinner();
 
-        this.ux.log('There are ' + invalidRules.length + ' active validation rules of ' + activeRules + ' without bypassers.');
+        this.ux.styledHeader(`There are ${this.invalidRules.length}/${this.activeRules} active, non-managed, validation rules without bypassers.`);
+
+        if (this.invalidRules.length && await this.ux.confirm('Want to see the detail?')) {
+            this.printResultTable();
+        }
     }
 
 
+    /**
+     * Obtain sobjects to check from the destination org
+     * @param conn - connection object
+     */
+    private async getSobjectsToSearch(conn): Promise<Array<string>> {
+
+        const types = [{ type: 'CustomObject', folder: null }];
+
+        this.ux.startSpinner('Getting available sobjects...');
+        const sobjsData = await conn.metadata.list(types, await this.org.retrieveMaxApiVersion());
+        this.ux.stopSpinner();
+
+        return sobjsData.map(item => item.fullName);
+    }
+
+
+    /**
+     * Separate sobjects to look in smaller groups wince the describe API only supports 10 objects at a time
+     * @param sobjData - sobjects to get detail from
+     */
     private getSObjSubgroups(sobjData: Array<string>): Array<Array<string>> {
 
         let sobjGroups = [];
-        let actualIndex = 0;
 
-        while (actualIndex < sobjData.length) {
+        while (this.totalSObjs < sobjData.length) {
             
             let sobjGroup = [];
-            for (let i = 0; i < 10 && actualIndex < sobjData.length; i++) {
-                sobjGroup.push(sobjData[actualIndex]);
-                actualIndex++;
+            for (let i = 0; i < this.METADATA_READ_MAX_SIZE && this.totalSObjs < sobjData.length; i++) {
+                sobjGroup.push(sobjData[this.totalSObjs]);
+                this.totalSObjs++;
             }
 
             sobjGroups.push(sobjGroup);
@@ -95,7 +106,59 @@ export default class ValidRules extends SfdxCommand {
     }
 
 
-    private doesHaveBypasser(validationRule: any, bypasserName = this.DEFAULT_BYPASSER): boolean {
-        return validationRule.errorConditionFormula.toLowerCase().indexOf(bypasserName) >= 0;
+    /**
+     * Check the validation rules from the object description
+     * @param objsDescribe - object description information from the Metadata API
+     */
+    private processObjectDescriptions(objsDescribe: Array<any>): void {
+
+        for (let objDescribe of objsDescribe) {
+
+            if (objDescribe['validationRules'] && objDescribe['validationRules'].length) {
+
+                for (let validationRule of objDescribe['validationRules']) {
+
+                    if (validationRule.active === 'true' && validationRule.fullName.indexOf('__') === -1) {
+
+                        this.activeRules++;
+
+                        if (!this.doesHaveBypasser(validationRule)) {
+                            validationRule._sobj = objDescribe.fullName;
+                            this.invalidRules.push(validationRule);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    /**
+     * Determine if the validation rule does have the bypasser
+     * @param validationRule - validation rule Metadata object
+     */
+    private doesHaveBypasser(validationRule: any): boolean {
+        return validationRule.errorConditionFormula.toLowerCase().indexOf(`$setup.${this.bypasserName}`) >= 0;
+    }
+
+    
+    /**
+     * Print the invalid rules result table in the terminal
+     */
+    private printResultTable(): void {
+
+        let rows = [];
+
+        for (let invalidRule of this.invalidRules) {
+            rows.push({
+                sobj: invalidRule._sobj,
+                name: invalidRule.fullName
+            });
+        }
+
+        this.ux.table(rows, {columns: [
+            { key: 'sobj'},
+            { key: 'name'}
+        ]});
     }
 }
