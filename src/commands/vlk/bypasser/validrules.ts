@@ -1,4 +1,5 @@
 import { SfdxCommand } from '@salesforce/command';
+import { cli } from 'cli-ux';
 
 export default class ValidRules extends SfdxCommand {
 
@@ -23,17 +24,26 @@ export default class ValidRules extends SfdxCommand {
 
         const conn = await this.org.getConnection();
         const types = [{type: 'CustomObject', folder: null}];
-        const sobjsData = await conn.metadata.list(types, await this.org.retrieveMaxApiVersion());
-        const sobjs = sobjsData.map(item => item.fullName);
 
+        cli.action.start('Getting available sobjects...');
+        const sobjsData = await conn.metadata.list(types, await this.org.retrieveMaxApiVersion());
+        cli.action.stop();
+
+        const sobjs = sobjsData.map(item => item.fullName);
+        
         let sobjGroups = this.getSObjSubgroups(sobjs);
 
         let activeRules = 0;
         let invalidRules = [];
+        let loopCounter = 1;
 
         for (const sobjGroup of sobjGroups) {
 
+            cli.action.start('Getting sobjects details ' + loopCounter + '/' + sobjGroups.length + '...');
+
             let objsDescribe = await conn.metadata.read('CustomObject', sobjGroup);
+
+            cli.action.stop();
 
             if (!(objsDescribe instanceof Array)) {
                 objsDescribe = [objsDescribe];
@@ -56,6 +66,8 @@ export default class ValidRules extends SfdxCommand {
                     }
                 }
             }
+
+            loopCounter++;
         }
 
 

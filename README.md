@@ -18,28 +18,27 @@ valk
 <!-- install -->
 <!-- usage -->
 ```sh-session
-$ npm install -g valk
-$ valk COMMAND
+$ npm install -g valkyrie
+$ valkyrie COMMAND
 running command...
-$ valk (-v|--version|version)
-valk/0.0.0 darwin-x64 node-v8.9.4
-$ valk --help [COMMAND]
+$ valkyrie (-v|--version|version)
+valkyrie/0.0.1 darwin-x64 node-v8.9.4
+$ valkyrie --help [COMMAND]
 USAGE
-  $ valk COMMAND
+  $ valkyrie COMMAND
 ...
 ```
 <!-- usagestop -->
 <!-- commands -->
-* [`valk bypasser:validrules`](#valk-bypasservalidrules)
-* [`valk hello:org [FILE]`](#valk-helloorg-file)
+* [`valkyrie vlk:bypasser:validrules`](#valkyrie-vlkbypasservalidrules)
 
-## `valk bypasser:validrules`
+## `valkyrie vlk:bypasser:validrules`
 
 Scan for bypassers in validation rules
 
 ```
 USAGE
-  $ valk bypasser:validrules
+  $ valkyrie vlk:bypasser:validrules
 
 OPTIONS
   -u, --targetusername=targetusername             username or alias for the target org; overrides default target org
@@ -51,35 +50,7 @@ EXAMPLE
   sfdx vlk:bypasser:validrules -u someOrg
 ```
 
-_See code: [src/commands/bypasser/validrules.ts](https://github.com/jonathanwiesel/valk/blob/v0.0.0/src/commands/bypasser/validrules.ts)_
-
-## `valk hello:org [FILE]`
-
-Prints a greeting and your org id(s)!
-
-```
-USAGE
-  $ valk hello:org [FILE]
-
-OPTIONS
-  -f, --force                                      example boolean flag
-  -n, --name=name                                  name to print
-  -u, --targetusername=targetusername              username or alias for the target org; overrides default target org
-  -v, --targetdevhubusername=targetdevhubusername  username or alias for the dev hub org; overrides default dev hub org
-  --apiversion=apiversion                          override the api version used for api requests made by this command
-  --json                                           format output as json
-  --loglevel=(trace|debug|info|warn|error|fatal)   logging level for this command invocation
-
-EXAMPLES
-  $ sfdx hello:org --targetusername myOrg@example.com --targetdevhubusername devhub@org.com
-     Hello world! This is org: MyOrg and I will be around until Tue Mar 20 2018!
-     My hub org id is: 00Dxx000000001234
-  
-  $ sfdx hello:org --name myname --targetusername myOrg@example.com
-     Hello myname! This is org: MyOrg and I will be around until Tue Mar 20 2018!
-```
-
-_See code: [src/commands/hello/org.ts](https://github.com/jonathanwiesel/valk/blob/v0.0.0/src/commands/hello/org.ts)_
+_See code: [src/commands/vlk/bypasser/validrules.ts](https://gitlab.com/jonathanwiesel/valkyrie/blob/v0.0.1/src/commands/vlk/bypasser/validrules.ts)_
 <!-- commandsstop -->
 <!-- debugging-your-plugin -->
 # Debugging your plugin
