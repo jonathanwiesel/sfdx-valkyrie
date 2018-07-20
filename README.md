@@ -60,7 +60,7 @@ _See code: [src/commands/vlk/bypasser/validrules.ts](https://gitlab.com/jonathan
 
 ## `valkyrie vlk:bypasser:workflows`
 
-Scan for bypassers in validation rules
+Scan for bypassers in workflow rules
 
 ```
 USAGE
@@ -77,6 +77,8 @@ OPTIONS
 EXAMPLE
 
   sfdx vlk:bypasser:workflows -u someOrg
+  sfdx vlk:bypasser:workflows -u someOrg -o Account,Contact
+  sfdx vlk:bypasser:workflows -u someOrg -n Other_Bypasser_Name__c
 ```
 
 _See code: [src/commands/vlk/bypasser/workflows.ts](https://gitlab.com/jonathanwiesel/valkyrie/blob/v0.0.1/src/commands/vlk/bypasser/workflows.ts)_
