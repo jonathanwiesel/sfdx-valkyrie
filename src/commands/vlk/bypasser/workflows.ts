@@ -1,12 +1,12 @@
 import { SfdxCommand } from '@salesforce/command';
 
-export default class BypassValidRules extends SfdxCommand {
+export default class BypassWorkflowRules extends SfdxCommand {
 
-    public static description = 'Scan for bypassers in validation rules';
+    public static description = 'Scan for bypassers in workflow rules';
     public static examples = [`
-sfdx vlk:bypasser:validrules -u someOrg
-sfdx vlk:bypasser:validrules -u someOrg -o Account,Contact
-sfdx vlk:bypasser:validrules -u someOrg -n Other_Bypasser_Name__c
+sfdx vlk:bypasser:workflows -u someOrg
+sfdx vlk:bypasser:workflows -u someOrg -o Account,Contact
+sfdx vlk:bypasser:workflows -u someOrg -n Other_Bypasser_Name__c
     `];
 
     protected static requiresUsername = true;
@@ -41,14 +41,14 @@ sfdx vlk:bypasser:validrules -u someOrg -n Other_Bypasser_Name__c
 
         let loopCounter = 0;
 
-        this.ux.startSpinner('Getting sobjects details');
+        this.ux.startSpinner('Getting workflow details');
         for (const sobjGroup of sobjGroups) {
 
             loopCounter += sobjGroup.length;
             
             this.ux.setSpinnerStatus(`${loopCounter}/${this.totalSObjs}`);
 
-            let objsDescribe = await conn.metadata.read('CustomObject', sobjGroup);
+            let objsDescribe = await conn.metadata.read('Workflow', sobjGroup);
 
             if (!(objsDescribe instanceof Array)) {
                 objsDescribe = [objsDescribe];
@@ -59,7 +59,7 @@ sfdx vlk:bypasser:validrules -u someOrg -n Other_Bypasser_Name__c
 
         this.ux.stopSpinner();
 
-        this.ux.styledHeader(`There are ${this.invalidRules.length}/${this.activeRules} active, non-managed, validation rules without bypassers.`);
+        this.ux.styledHeader(`There are ${this.invalidRules.length}/${this.activeRules} active, non-managed, workflow rules without bypassers.`);
 
         if (this.invalidRules.length && await this.ux.confirm('Want to see the detail?')) {
 
@@ -79,9 +79,9 @@ sfdx vlk:bypasser:validrules -u someOrg -n Other_Bypasser_Name__c
      */
     private async getSobjectsToSearch(conn): Promise<Array<string>> {
 
-        const types = [{ type: 'CustomObject', folder: null }];
+        const types = [{ type: 'Workflow', folder: null }];
 
-        this.ux.startSpinner('Getting available sobjects');
+        this.ux.startSpinner('Getting sobjects with workflows');
         const sobjsData = await conn.metadata.list(types, await this.org.retrieveMaxApiVersion());
         this.ux.stopSpinner();
 
@@ -113,7 +113,7 @@ sfdx vlk:bypasser:validrules -u someOrg -n Other_Bypasser_Name__c
 
 
     /**
-     * Check the validation rules from the object description
+     * Check the workflow rules from the object description
      * @param objsDescribe - object description information from the Metadata API
      */
     private processObjectDescriptions(objsDescribe: Array<any>): void {
@@ -122,23 +122,23 @@ sfdx vlk:bypasser:validrules -u someOrg -n Other_Bypasser_Name__c
 
         for (let objDescribe of objsDescribe) {
 
-            if (objDescribe['validationRules']) {
-
-                rules = objDescribe['validationRules'];
+            if (objDescribe['rules']) {
+                
+                rules = objDescribe['rules'];
 
                 if (!(rules instanceof Array)) {
                     rules = [rules];
                 }
 
-                for (let validationRule of rules) {
+                for (let workflowRule of rules) {
 
-                    if (validationRule.active === 'true' && validationRule.fullName.indexOf('__') === -1) {
+                    if (workflowRule.active === 'true' && workflowRule.fullName.indexOf('__') === -1) {
 
                         this.activeRules++;
 
-                        if (!this.doesHaveBypasser(validationRule)) {
-                            validationRule.sobj = objDescribe.fullName;
-                            this.invalidRules.push(validationRule);
+                        if (!this.doesHaveBypasser(workflowRule)) {
+                            workflowRule.sobj = objDescribe.fullName;
+                            this.invalidRules.push(workflowRule);
                         }
                     }
                 }
@@ -148,10 +148,10 @@ sfdx vlk:bypasser:validrules -u someOrg -n Other_Bypasser_Name__c
 
 
     /**
-     * Determine if the validation rule does have the bypasser
-     * @param validationRule - validation rule Metadata object
+     * Determine if the workflow rule does have the bypasser
+     * @param workflowRule - workflow rule Metadata object
      */
-    private doesHaveBypasser(validationRule: any): boolean {
-        return validationRule.errorConditionFormula.toLowerCase().indexOf(`$setup.${this.bypasserName}`) >= 0;
+    private doesHaveBypasser(workflowRule: any): boolean {
+        return workflowRule.formula && workflowRule.formula.toLowerCase().indexOf(`$setup.${this.bypasserName}`) >= 0;
     }
 }
