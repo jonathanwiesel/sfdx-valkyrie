@@ -1,4 +1,4 @@
-import { UX, Org } from '@salesforce/core'; 
+import { UX, Org, Connection } from '@salesforce/core'; 
 
 export abstract class BypasserScanner {
 
@@ -18,20 +18,41 @@ export abstract class BypasserScanner {
     protected abstract functionalName: string; 
     protected abstract metadataPropertyToCheck: string
 
-    public async exec(): Promise<void> {
+    protected conn: Connection;
+    
+    protected async init(): Promise<void> {
 
         this.bypasserName = this.flags.name || this.DEFAULT_BYPASSER;
         this.bypasserName = this.bypasserName.toLowerCase();
 
         this.ux.styledHeader(`Looking for ${this.functionalName} with "${this.bypasserName}" bypasser in ${this.flags.objects || 'all objects'}`);
 
-        const conn = await this.org.getConnection();
+        this.conn = await this.org.getConnection();
+    } 
+
+    /** 
+     * Routing method that orchestrates the logic 
+     */
+    public async exec(): Promise<void> {
+
+        await this.init();
 
         const sobjs = this.flags.objects ? this.flags.objects.split(',') :
-                        await this.getSobjectsToSearch(conn);
+                        await this.getSobjectsToSearch();
 
         const objGroups = this.getObjSubgroups(sobjs);
 
+        await this.getAndProcessDetailObjects(objGroups);
+
+        await this.printResult();
+    } 
+    
+    /** 
+     * Obtain detail objects and process them 
+     * @param objGroups - groups to get detail from
+     */
+    protected async getAndProcessDetailObjects(objGroups: Array<Array<string>>): Promise<void> {
+        
         let loopCounter = 0;
 
         this.ux.startSpinner('Getting objects details');
@@ -41,7 +62,7 @@ export abstract class BypasserScanner {
 
             this.ux.setSpinnerStatus(`${loopCounter}/${this.totalObjs}`);
 
-            let objsDescribe = await conn.metadata.read(this.metadataObj, objGroup);
+            let objsDescribe = await this.conn.metadata.read(this.metadataObj, objGroup);
 
             if (!(objsDescribe instanceof Array)) {
                 objsDescribe = [objsDescribe];
@@ -51,31 +72,17 @@ export abstract class BypasserScanner {
         }
 
         this.ux.stopSpinner();
-
-        this.ux.styledHeader(`There are ${this.invalidRules.length}/${this.activeRules} active, non-managed, ${this.functionalName} without bypassers.`);
-
-        if (this.invalidRules.length && await this.ux.confirm('Want to see the detail?')) {
-
-            this.ux.table(this.invalidRules, {
-                columns: [
-                    { key: 'sobj' },
-                    { key: 'fullName' }
-                ]
-            });
-        }
-    } 
-
+    }
 
     /**
      * Obtain sobjects to check from the destination org
-     * @param conn - connection object
      */
-    private async getSobjectsToSearch(conn): Promise<Array<string>> {
+    protected async getSobjectsToSearch(): Promise<Array<string>> {
 
         const types = [{ type: this.metadataObj, folder: null }];
 
         this.ux.startSpinner('Getting available objects');
-        const sobjsData = await conn.metadata.list(types, await this.org.retrieveMaxApiVersion());
+        const sobjsData = await this.conn.metadata.list(types, await this.org.retrieveMaxApiVersion());
         this.ux.stopSpinner();
 
         return sobjsData.map(item => item.fullName);
@@ -86,7 +93,7 @@ export abstract class BypasserScanner {
      * Separate sobjects to look in smaller groups wince the describe API only supports 10 objects at a time
      * @param objData - objects to get detail from
      */
-    private getObjSubgroups(objData: Array<string>): Array<Array<string>> {
+    protected getObjSubgroups(objData: Array<string>): Array<Array<string>> {
 
         let objGroups = [];
 
@@ -109,12 +116,12 @@ export abstract class BypasserScanner {
      * Check the validation rules from the object description
      * @param objsDescribe - object description information from the Metadata API
      */
-    private processObjectDescriptions(objsDescribe: Array<any>): void {
+    protected processObjectDescriptions(objsDescribe: Array<any>): void {
 
         let rules;
 
         for (let objDescribe of objsDescribe) {
-
+            
             if (objDescribe[this.metadataPropertyToCheck]) {
 
                 rules = objDescribe[this.metadataPropertyToCheck];
@@ -125,7 +132,7 @@ export abstract class BypasserScanner {
 
                 for (let rule of rules) {
 
-                    if (rule.active === 'true' && rule.fullName.indexOf('__') === -1) {
+                    if (this.filterRule(rule)) {
 
                         this.activeRules++;
 
@@ -139,10 +146,37 @@ export abstract class BypasserScanner {
         }
     }
 
+    /**
+     * Determine if a rule should be further evaluated
+     * @param rule - rule being evaluated
+     */
+    protected filterRule(rule: any): boolean {
+        return rule.active === 'true' && rule.fullName.indexOf('__') === -1;
+    }
+
+
+    /**
+     * Print the results found
+     */
+    protected async printResult(): Promise<void> {
+
+        this.ux.styledHeader(`There are ${this.invalidRules.length}/${this.activeRules} active, non-managed, ${this.functionalName} without bypassers.`);
+        
+        if (this.invalidRules.length && await this.ux.confirm('Want to see the detail?')) {
+
+            this.ux.table(this.invalidRules, {
+                columns: [
+                    { key: 'sobj' },
+                    { key: 'fullName' }
+                ]
+            });
+        }
+    }
 
     /**
      * Determine if the rule does have the bypasser
      * @param rule - rule Metadata object
      */
     protected abstract doesHaveBypasser(rule: any): boolean;
+    
 }
