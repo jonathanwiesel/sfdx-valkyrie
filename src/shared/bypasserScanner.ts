@@ -6,8 +6,8 @@ export abstract class BypasserScanner {
     private METADATA_READ_MAX_SIZE = 10;
 
     protected totalObjs = 0;
-    protected activeRules = 0;
-    protected invalidRules = [];
+    protected activeObjs = 0;
+    protected invalidObjs = [];
     protected bypasserName: string;
 
     protected abstract ux: UX;
@@ -16,7 +16,6 @@ export abstract class BypasserScanner {
     protected abstract flags: any;
     protected abstract metadataObj: string;
     protected abstract functionalName: string; 
-    protected abstract metadataPropertyToCheck: string
 
     protected conn: Connection;
     
@@ -121,50 +120,20 @@ export abstract class BypasserScanner {
         let rules;
 
         for (let objDescribe of objsDescribe) {
-            
-            if (objDescribe[this.metadataPropertyToCheck]) {
-
-                rules = objDescribe[this.metadataPropertyToCheck];
-
-                if (!(rules instanceof Array)) {
-                    rules = [rules];
-                }
-
-                for (let rule of rules) {
-
-                    if (this.filterRule(rule)) {
-
-                        this.activeRules++;
-
-                        if (!this.doesHaveBypasser(rule)) {
-                            rule.sobj = objDescribe.fullName;
-                            this.invalidRules.push(rule);
-                        }
-                    }
-                }
-            }
+            this.analizeObject(objDescribe);
         }
     }
-
-    /**
-     * Determine if a rule should be further evaluated
-     * @param rule - rule being evaluated
-     */
-    protected filterRule(rule: any): boolean {
-        return rule.active === 'true' && rule.fullName.indexOf('__') === -1;
-    }
-
 
     /**
      * Print the results found
      */
     protected async printResult(): Promise<void> {
 
-        this.ux.styledHeader(`There are ${this.invalidRules.length}/${this.activeRules} active, non-managed, ${this.functionalName} without bypassers.`);
+        this.ux.styledHeader(`There are ${this.invalidObjs.length}/${this.activeObjs} active, non-managed, ${this.functionalName} without bypassers.`);
         
-        if (this.invalidRules.length && await this.ux.confirm('Want to see the detail?')) {
+        if (this.invalidObjs.length && await this.ux.confirm('Want to see the detail?')) {
 
-            this.ux.table(this.invalidRules, {
+            this.ux.table(this.invalidObjs, {
                 columns: [
                     { key: 'sobj' },
                     { key: 'fullName' }
@@ -174,9 +143,9 @@ export abstract class BypasserScanner {
     }
 
     /**
-     * Determine if the rule does have the bypasser
-     * @param rule - rule Metadata object
+     * Analize the object and should determine the precense of a bypasser
+     * @param rule - obj description being evaluated
      */
-    protected abstract doesHaveBypasser(rule: any): boolean;
+    protected abstract analizeObject(objDescribe: any): void;
     
 }

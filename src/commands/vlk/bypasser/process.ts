@@ -29,7 +29,6 @@ class BypassProcessImpl extends BypasserScanner {
 
     protected functionalName = 'processes';
     protected metadataObj = 'FlowDefinition';
-    protected metadataPropertyToCheck = '';
     
     private activeProcesses = [];
     private normalizedObjects = [];
@@ -68,31 +67,29 @@ class BypassProcessImpl extends BypasserScanner {
      * Override for main object detail processor
      * @param objsDescribe - object description to be analyzed
      */
-    protected processObjectDescriptions(objsDescribe: Array<any>): void {
+    protected analizeObject(objDescribe: any): void {
 
         switch (this.metadataObj) {
             case 'FlowDefinition':
-                this.determineActiveProcesses(objsDescribe);
+                this.determineActiveProcesses(objDescribe);
                 break;
             case 'Flow':
-                this.analizeProcess(objsDescribe);
+                this.analizeProcess(objDescribe);
                 break;
             default:
                 break;
         }
-    }
+    } 
 
     /**
      * Determine if the process is active and add it to the list
      * @param objsDescribe - object description to be analized
      */
-    private determineActiveProcesses(objsDescribe: Array<any>): void {
+    private determineActiveProcesses(objDescribe: any): void {
 
-        for (let objDescribe of objsDescribe) {
-            if (objDescribe.activeVersionNumber) {
-                this.activeProcesses.push(`${objDescribe.fullName}-${objDescribe.activeVersionNumber}`);
-            }
-        }  
+        if (objDescribe.activeVersionNumber) {
+            this.activeProcesses.push(`${objDescribe.fullName}-${objDescribe.activeVersionNumber}`);
+        }
     }
 
 
@@ -100,26 +97,25 @@ class BypassProcessImpl extends BypasserScanner {
      * Analize the process desciption to determine bypasser presence
      * @param objsDescribe - object description to be analized
      */
-    private analizeProcess(objsDescribe: Array<any>): void {
-        
-        let sobj: string;
-
-        for (let objDescribe of objsDescribe) {
+    private analizeProcess(objDescribe: any): void {
             
-            sobj = this.getRelatedSObj(objDescribe);
+        const sobj = this.getRelatedSObj(objDescribe);
 
-            if (!this.normalizedObjects.length || this.normalizedObjects.includes(sobj.toLowerCase())) {
+        if (this.filterObject(sobj)) {
 
-                this.activeRules++;
+            this.activeObjs++;
 
-                if (!this.doesHaveBypasser(objDescribe)) {
-                    objDescribe.sobj = sobj;
-                    this.invalidRules.push(objDescribe);
-                }
+            if (!this.doesHaveBypasser(objDescribe)) {
+                objDescribe.sobj = sobj;
+                this.invalidObjs.push(objDescribe);
             }
         }
     }
 
+
+    private filterObject(sobj: string): boolean {
+        return this.normalizedObjects.length === 0 || this.normalizedObjects.includes(sobj.toLowerCase());
+    }
 
     /**
      * Obtain the related object to the process
@@ -150,7 +146,7 @@ class BypassProcessImpl extends BypasserScanner {
      * Determine if the process has a bypasser
      * @param objDescribe - object description to be analized
      */
-    protected doesHaveBypasser(objDescribe: any): boolean {
+    private doesHaveBypasser(objDescribe: any): boolean {
         
         const bypassVar = this.getBypasserRefVariable(objDescribe);
 

@@ -29,13 +29,41 @@ class BypassValidRulesImpl extends BypasserScanner {
 
     protected functionalName = 'validation rules';
     protected metadataObj = 'CustomObject';
-    protected metadataPropertyToCheck = 'validationRules';
 
     constructor(protected flags: any, protected ux, protected org) {
         super();
     }
 
-    protected doesHaveBypasser(validationRule: any): boolean {
+    protected analizeObject(objDescribe: any): void {
+
+        if (objDescribe.validationRules) {
+
+            let rules = objDescribe.validationRules;
+
+            if (!(rules instanceof Array)) {
+                rules = [rules];
+            }
+
+            for (let rule of rules) {
+
+                if (this.filterObject(rule)) {
+
+                    this.activeObjs++;
+
+                    if (!this.doesHaveBypasser(rule)) {
+                        rule.sobj = objDescribe.fullName;
+                        this.invalidObjs.push(rule);
+                    }
+                }
+            }
+        }
+    }
+
+    private filterObject(validationRule: any): boolean {
+        return validationRule.active === 'true' && validationRule.fullName.indexOf('__') === -1;
+    }
+
+    private doesHaveBypasser(validationRule: any): boolean {
         return validationRule.errorConditionFormula.toLowerCase().indexOf(`$setup.${this.bypasserName}`) >= 0;
     }
 }

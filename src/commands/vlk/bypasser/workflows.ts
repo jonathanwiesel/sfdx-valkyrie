@@ -29,13 +29,41 @@ class BypassWorkflowRulesImpl extends BypasserScanner {
 
     protected functionalName = 'workflow rules';
     protected metadataObj = 'Workflow';
-    protected metadataPropertyToCheck = 'rules';
 
     constructor(protected flags: any, protected ux, protected org) {
         super();
     }
 
-    protected doesHaveBypasser(rule: any): boolean {
+    protected analizeObject(objDescribe: any): void {
+
+        if (objDescribe.rules) {
+
+            let rules = objDescribe.rules;
+
+            if (!(rules instanceof Array)) {
+                rules = [rules];
+            }
+
+            for (let rule of rules) {
+
+                if (this.filterObject(rule)) {
+
+                    this.activeObjs++;
+
+                    if (!this.doesHaveBypasser(rule)) {
+                        rule.sobj = objDescribe.fullName;
+                        this.invalidObjs.push(rule);
+                    }
+                }
+            }
+        }
+    }
+
+    private filterObject(rule: any): boolean {
+        return rule.active === 'true' && rule.fullName.indexOf('__') === -1;
+    }
+
+    private doesHaveBypasser(rule: any): boolean {
         return rule.formula && rule.formula.toLowerCase().indexOf(`$setup.${this.bypasserName}`) >= 0;
     }
 }
