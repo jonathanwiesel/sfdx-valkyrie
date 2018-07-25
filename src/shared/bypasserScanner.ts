@@ -1,4 +1,5 @@
 import { UX, Org, Connection } from '@salesforce/core'; 
+import { MetadataModel } from  './metadataModels/base';
 
 export abstract class BypasserScanner {
 
@@ -117,10 +118,22 @@ export abstract class BypasserScanner {
      */
     protected processObjectDescriptions(objsDescribe: Array<any>): void {
 
-        let rules;
+        let models: Array<MetadataModel>;
 
         for (let objDescribe of objsDescribe) {
-            this.analizeObject(objDescribe);
+            models = this.analizeObject(objDescribe);
+
+            for (let model of models) {
+
+                if (model.filterObject()) {
+
+                    this.activeObjs++;
+
+                    if (!model.doesHaveBypasser(this.bypasserName)) {
+                        this.invalidObjs.push(model);
+                    }
+                }
+            }
         }
     }
 
@@ -135,8 +148,8 @@ export abstract class BypasserScanner {
 
             this.ux.table(this.invalidObjs, {
                 columns: [
-                    { key: 'sobj' },
-                    { key: 'fullName' }
+                    { key: 'sobjName' },
+                    { key: 'metadataName' }
                 ]
             });
         }
@@ -146,6 +159,6 @@ export abstract class BypasserScanner {
      * Analize the object and should determine the precense of a bypasser
      * @param rule - obj description being evaluated
      */
-    protected abstract analizeObject(objDescribe: any): void;
+    protected abstract analizeObject(objDescribe: any): Array<MetadataModel>;
     
 }

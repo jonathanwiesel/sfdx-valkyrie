@@ -1,5 +1,7 @@
 import { SfdxCommand } from '@salesforce/command';
 import { BypasserScanner } from '../../../shared/bypasserScanner'; 
+import { MetadataModel } from  '../../../shared/metadataModels/base';
+import { WorkflowModel } from  '../../../shared/metadataModels/workflowModel';
 
 export default class BypassWorkflowRules extends SfdxCommand {
 
@@ -34,36 +36,7 @@ class BypassWorkflowRulesImpl extends BypasserScanner {
         super();
     }
 
-    protected analizeObject(objDescribe: any): void {
-
-        if (objDescribe.rules) {
-
-            let rules = objDescribe.rules;
-
-            if (!(rules instanceof Array)) {
-                rules = [rules];
-            }
-
-            for (let rule of rules) {
-
-                if (this.filterObject(rule)) {
-
-                    this.activeObjs++;
-
-                    if (!this.doesHaveBypasser(rule)) {
-                        rule.sobj = objDescribe.fullName;
-                        this.invalidObjs.push(rule);
-                    }
-                }
-            }
-        }
-    }
-
-    private filterObject(rule: any): boolean {
-        return rule.active === 'true' && rule.fullName.indexOf('__') === -1;
-    }
-
-    private doesHaveBypasser(rule: any): boolean {
-        return rule.formula && rule.formula.toLowerCase().indexOf(`$setup.${this.bypasserName}`) >= 0;
+    protected analizeObject(objDescribe: any): Array<MetadataModel> {
+        return WorkflowModel.createModelsFromDescribe(objDescribe);
     }
 }

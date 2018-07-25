@@ -1,5 +1,8 @@
 import { SfdxCommand } from '@salesforce/command';
-import { BypasserScanner } from '../../../shared/bypasserScanner'; 
+import { BypasserScanner } from '../../../shared/bypasserScanner';
+import { MetadataModel } from  '../../../shared/metadataModels/base';
+import { ValidationRuleModel } from  '../../../shared/metadataModels/validRuleModel';
+
 
 export default class BypassValidRules extends SfdxCommand {
 
@@ -34,36 +37,7 @@ class BypassValidRulesImpl extends BypasserScanner {
         super();
     }
 
-    protected analizeObject(objDescribe: any): void {
-
-        if (objDescribe.validationRules) {
-
-            let rules = objDescribe.validationRules;
-
-            if (!(rules instanceof Array)) {
-                rules = [rules];
-            }
-
-            for (let rule of rules) {
-
-                if (this.filterObject(rule)) {
-
-                    this.activeObjs++;
-
-                    if (!this.doesHaveBypasser(rule)) {
-                        rule.sobj = objDescribe.fullName;
-                        this.invalidObjs.push(rule);
-                    }
-                }
-            }
-        }
-    }
-
-    private filterObject(validationRule: any): boolean {
-        return validationRule.active === 'true' && validationRule.fullName.indexOf('__') === -1;
-    }
-
-    private doesHaveBypasser(validationRule: any): boolean {
-        return validationRule.errorConditionFormula.toLowerCase().indexOf(`$setup.${this.bypasserName}`) >= 0;
+    protected analizeObject(objDescribe: any): Array<MetadataModel> {
+        return ValidationRuleModel.createModelsFromDescribe(objDescribe);
     }
 }

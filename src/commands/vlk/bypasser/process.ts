@@ -1,5 +1,7 @@
 import { SfdxCommand } from '@salesforce/command';
 import { BypasserScanner } from '../../../shared/bypasserScanner';
+import { MetadataModel } from  '../../../shared/metadataModels/base';
+import { ProcessModel } from  '../../../shared/metadataModels/processModel';
 
 export default class BypassProcess extends SfdxCommand {
 
@@ -67,18 +69,22 @@ class BypassProcessImpl extends BypasserScanner {
      * Override for main object detail processor
      * @param objsDescribe - object description to be analyzed
      */
-    protected analizeObject(objDescribe: any): void {
+    protected analizeObject(objDescribe: any): Array<MetadataModel> {
+
+        let models = [];
 
         switch (this.metadataObj) {
             case 'FlowDefinition':
                 this.determineActiveProcesses(objDescribe);
                 break;
             case 'Flow':
-                this.analizeProcess(objDescribe);
+                models = ProcessModel.createModelsFromDescribe(objDescribe, this.normalizedObjects);
                 break;
             default:
                 break;
         }
+
+        return models;
     } 
 
     /**
@@ -90,148 +96,5 @@ class BypassProcessImpl extends BypasserScanner {
         if (objDescribe.activeVersionNumber) {
             this.activeProcesses.push(`${objDescribe.fullName}-${objDescribe.activeVersionNumber}`);
         }
-    }
-
-
-    /**
-     * Analize the process desciption to determine bypasser presence
-     * @param objsDescribe - object description to be analized
-     */
-    private analizeProcess(objDescribe: any): void {
-            
-        const sobj = this.getRelatedSObj(objDescribe);
-
-        if (this.filterObject(sobj)) {
-
-            this.activeObjs++;
-
-            if (!this.doesHaveBypasser(objDescribe)) {
-                objDescribe.sobj = sobj;
-                this.invalidObjs.push(objDescribe);
-            }
-        }
-    }
-
-
-    private filterObject(sobj: string): boolean {
-        return this.normalizedObjects.length === 0 || this.normalizedObjects.includes(sobj.toLowerCase());
-    }
-
-    /**
-     * Obtain the related object to the process
-     * @param objDescribe - object desciprion to be analized
-     */
-    private getRelatedSObj(objDescribe: any): string {
-
-        let res: string;
-
-        if (objDescribe.processMetadataValues instanceof Array) {
-            
-            for (let metaVal of objDescribe.processMetadataValues) {
-
-                if (metaVal.name === 'ObjectType' && 
-                    metaVal.value && metaVal.value.stringValue) {
-                    
-                    res = metaVal.value.stringValue;
-                    break;
-                }
-            }
-        }
-
-        return res;
-    }
-
-    
-    /**
-     * Determine if the process has a bypasser
-     * @param objDescribe - object description to be analized
-     */
-    private doesHaveBypasser(objDescribe: any): boolean {
-        
-        const bypassVar = this.getBypasserRefVariable(objDescribe);
-
-        let decisions = objDescribe.decisions;
-
-        if (!(decisions instanceof Array)) {
-            decisions = [decisions];
-        }
-
-        return bypassVar && this.decisionIncludesVariable(decisions, bypassVar);
-    }
-
-
-    /**
-     * Obtain the process variable that houses the bypasser
-     * @param objDescribe - object description to be analized
-     */
-    private getBypasserRefVariable(objDescribe: any): string {
-
-        let bypasserVar: string;
-        
-        let formulas;
-
-        if (objDescribe.formulas) {
-
-            formulas = objDescribe.formulas;
-
-            if (!(formulas instanceof Array)) {
-                formulas = [formulas];
-            }
-
-            for (let formula of formulas) {
-
-                if (formula.expression && formula.expression.toLowerCase().indexOf(`$setup.${this.bypasserName}`) >= 0) {
-                    
-                    bypasserVar = formula.name;
-                    break;
-                }
-            }
-        }
-
-        return bypasserVar;
-    }
-
-    /**
-     * Determine if a decision nodes in a process reference the supplied variable
-     * @param decisions - process decision nodes to check
-     * @param varToCheck - bypasser variable to check for existence
-     */
-    private decisionIncludesVariable(decisions: Array<any>, varToCheck: string): boolean {
-
-        let rules;
-        let conditions;
-
-        for (let decision of decisions) {
-
-            if (decision.rules) {
-
-                rules = decision.rules;
-
-                if (!(rules instanceof Array)) {
-                    rules = [rules];
-                }
-
-                for (let rule of rules) {
-
-                    if (rule.conditions) {
-
-                        conditions = rule.conditions;
-
-                        if (!(conditions instanceof Array)) {
-                            conditions = [conditions];
-                        }
-
-                        for (let condition of conditions) {
-
-                            if (condition.leftValueReference === varToCheck) {
-                                return true;
-                            }                        
-                        }
-                    }
-                }
-            }
-        }
-
-        return false;
     }
 }
