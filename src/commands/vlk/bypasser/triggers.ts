@@ -1,5 +1,8 @@
 import { SfdxCommand } from '@salesforce/command';
 import { BypasserScanner } from '../../../shared/bypasserScanner'; 
+import { MetadataModel } from  '../../../shared/metadataModels/base';
+import { TriggerModel } from  '../../../shared/metadataModels/triggerModel';
+import { ApexClassModel } from  '../../../shared/metadataModels/apexClassModel';
 
 export default class BypassValidRules extends SfdxCommand {
 
@@ -20,23 +23,24 @@ sfdx vlk:bypasser:triggers -u someOrg -n Other_Bypasser_Name__c
 
     public async run(): Promise<any> {
 
-        let bypasserScanner: BypasserScanner;
+        let bypassScanner: BypasserScanner;
 
         if (this.flags.factory) {
 
-            this.flags.objects = this.flags.factory;
-            bypasserScanner = new BypassTriggersFactoryImpl(this.flags, this.ux, this.org);
+            bypassScanner = new BypassTriggersFactoryImpl(this.ux, this.org, this.flags.name, [this.flags.factory]);
 
         } else {
 
-            bypasserScanner = new BypassTriggersImpl(this.flags, this.ux, this.org);
+            let filters;
+        
+            if (this.flags.objects) {
+                filters = this.flags.objects.split(',');
+            }
+
+            bypassScanner = new BypassTriggersImpl(this.ux, this.org, this.flags.name, null, filters);
         }
 
-        //TODO: check if scanning a factory or the triggers per se
-        //      in case of factory, specify the factory
-        //      in case of triggers per se, specify (or not) related objects
-
-        await bypasserScanner.exec();
+        await bypassScanner.exec();
     }
 }
 
@@ -45,20 +49,8 @@ class BypassTriggersImpl extends BypasserScanner {
     protected functionalName = 'triggers';
     protected metadataObj = 'ApexTrigger';
 
-    constructor(protected flags: any, protected ux, protected org) {
-        super();
-    }
-
-    protected analizeObject(objDescribe: any): void {
-
-    }
-    
-    protected filterObject(objDescribe: any): boolean {
-        return true;
-    }
-
-    protected doesHaveBypasser(trigger: any): boolean {
-        return false;
+    protected analizeObject(objDescribe: any): Array<MetadataModel> {
+        return TriggerModel.createModelsFromDescribe(objDescribe);
     }
 }
 
@@ -68,19 +60,7 @@ class BypassTriggersFactoryImpl extends BypasserScanner {
     protected functionalName = 'trigger factory';
     protected metadataObj = 'ApexClass';
 
-    constructor(protected flags: any, protected ux, protected org) {
-        super();
-    }
-
-    protected analizeObject(objDescribe: any): void {
-
-    }
-
-    private filterObject(objDescribe: any): boolean {
-        return true;
-    }
-
-    private doesHaveBypasser(apexClass: any): boolean {
-        return false;
+    protected analizeObject(objDescribe: any): Array<MetadataModel>  {
+        return ApexClassModel.createModelsFromDescribe(objDescribe);
     }
 }
