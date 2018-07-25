@@ -21,7 +21,13 @@ sfdx vlk:bypasser:process -u someOrg -n Other_Bypasser_Name__c
 
     public async run(): Promise<any> {
 
-        let bypasserScanner = new BypassProcessImpl(this.flags, this.ux, this.org);
+        let filters;
+        
+        if (this.flags.objects) {
+            filters = this.flags.objects.split(',').map(item => item.toLowerCase());
+        }
+
+        const bypasserScanner = new BypassProcessImpl(this.ux, this.org, this.flags.name, null, filters);
 
         await bypasserScanner.exec();
     }
@@ -33,11 +39,6 @@ class BypassProcessImpl extends BypasserScanner {
     protected metadataObj = 'FlowDefinition';
     
     private activeProcesses = [];
-    private normalizedObjects = [];
-
-    constructor(protected flags: any, protected ux, protected org) {
-        super();
-    }
 
 
     /**
@@ -46,10 +47,6 @@ class BypassProcessImpl extends BypasserScanner {
     public async exec(): Promise<void> {
 
         await this.init();
-
-        if (this.flags.objects) {
-            this.normalizedObjects = this.flags.objects.split(',').map(item => item.toLowerCase());
-        }
 
         const sobjs = await this.getSobjectsToSearch();
         let objGroups = this.getObjSubgroups(sobjs);
@@ -78,7 +75,7 @@ class BypassProcessImpl extends BypasserScanner {
                 this.determineActiveProcesses(objDescribe);
                 break;
             case 'Flow':
-                models = ProcessModel.createModelsFromDescribe(objDescribe, this.normalizedObjects);
+                models = ProcessModel.createModelsFromDescribe(objDescribe, this.relatedSObjsToFilter);
                 break;
             default:
                 break;

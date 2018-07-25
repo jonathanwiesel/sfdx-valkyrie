@@ -21,7 +21,13 @@ sfdx vlk:bypasser:workflows -u someOrg -n Other_Bypasser_Name__c
 
     public async run(): Promise<any> {
 
-        let bypasserScanner = new BypassWorkflowRulesImpl(this.flags, this.ux, this.org);
+        let filters;
+        
+        if (this.flags.objects) {
+            filters = this.flags.objects.split(',');
+        }
+
+        const bypasserScanner = new BypassWorkflowRulesImpl(this.ux, this.org, this.flags.name, filters, filters);
 
         await bypasserScanner.exec();
     }
@@ -31,10 +37,6 @@ class BypassWorkflowRulesImpl extends BypasserScanner {
 
     protected functionalName = 'workflow rules';
     protected metadataObj = 'Workflow';
-
-    constructor(protected flags: any, protected ux, protected org) {
-        super();
-    }
 
     protected analizeObject(objDescribe: any): Array<MetadataModel> {
         return WorkflowModel.createModelsFromDescribe(objDescribe);

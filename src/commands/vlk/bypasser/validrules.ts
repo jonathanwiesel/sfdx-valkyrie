@@ -22,7 +22,13 @@ sfdx vlk:bypasser:validrules -u someOrg -n Other_Bypasser_Name__c
 
     public async run(): Promise<any> {
 
-        let bypasserScanner = new BypassValidRulesImpl(this.flags, this.ux, this.org);
+        let filters;
+        
+        if (this.flags.objects) {
+            filters = this.flags.objects.split(',');
+        }
+
+        const bypasserScanner = new BypassValidRulesImpl(this.ux, this.org, this.flags.name, filters, filters);
 
         await bypasserScanner.exec();
     }
@@ -32,10 +38,6 @@ class BypassValidRulesImpl extends BypasserScanner {
 
     protected functionalName = 'validation rules';
     protected metadataObj = 'CustomObject';
-
-    constructor(protected flags: any, protected ux, protected org) {
-        super();
-    }
 
     protected analizeObject(objDescribe: any): Array<MetadataModel> {
         return ValidationRuleModel.createModelsFromDescribe(objDescribe);

@@ -9,26 +9,27 @@ export abstract class BypasserScanner {
     protected totalObjs = 0;
     protected activeObjs = 0;
     protected invalidObjs = [];
-    protected bypasserName: string;
 
-    protected abstract ux: UX;
-    protected abstract org: Org;
-
-    protected abstract flags: any;
     protected abstract metadataObj: string;
     protected abstract functionalName: string; 
 
     protected conn: Connection;
     
-    protected async init(): Promise<void> {
+    constructor(protected ux: UX, protected org: Org, protected bypasserName: string, protected objectsToFiler: Array<string> = [], protected relatedSObjsToFilter: Array<string> = []) {
 
-        this.bypasserName = this.flags.name || this.DEFAULT_BYPASSER;
+        if (!this.bypasserName) {
+            this.bypasserName = this.DEFAULT_BYPASSER;
+        }
+
         this.bypasserName = this.bypasserName.toLowerCase();
+    }
 
-        this.ux.styledHeader(`Looking for ${this.functionalName} with "${this.bypasserName}" bypasser in ${this.flags.objects || 'all objects'}`);
+    protected async init() {
+
+        this.ux.styledHeader(`Looking for ${this.functionalName} with "${this.bypasserName}" bypasser in ${this.relatedSObjsToFilter.length ? this.relatedSObjsToFilter.join(',') : 'all objects'}`);
 
         this.conn = await this.org.getConnection();
-    } 
+    }
 
     /** 
      * Routing method that orchestrates the logic 
@@ -37,8 +38,7 @@ export abstract class BypasserScanner {
 
         await this.init();
 
-        const sobjs = this.flags.objects ? this.flags.objects.split(',') :
-                        await this.getSobjectsToSearch();
+        const sobjs = this.objectsToFiler.length ? this.objectsToFiler : await this.getSobjectsToSearch();
 
         const objGroups = this.getObjSubgroups(sobjs);
 
