@@ -1,21 +1,28 @@
 import { MetadataModel } from './base';
+import { MetadataModelBuilder } from './builder';
 
 export class WorkflowModel extends MetadataModel {
 
-    public static createModelsFromDescribe(objDescribe: any): Array<WorkflowModel> {
+    public static metadataObj = 'Workflow'; 
+    public static functionalName = 'workflow rules';
+
+    public static async createModelsFromDescribe(objDescribes: Array<any>, builder: MetadataModelBuilder): Promise<Array<WorkflowModel>> {
 
         let models = [];
 
-        if (objDescribe.rules) {
+        for (let objDescribe of objDescribes) {
 
-            let rules = objDescribe.rules;
+            if (objDescribe.rules) {
 
-            if (!(rules instanceof Array)) {
-                rules = [rules];
-            }
+                let rules = objDescribe.rules;
 
-            for (let rule of rules) {
-                models.push(new WorkflowModel(objDescribe.fullName, rule));
+                if (!(rules instanceof Array)) {
+                    rules = [rules];
+                }
+
+                for (let rule of rules) {
+                    models.push(new WorkflowModel(objDescribe.fullName, rule));
+                }
             }
         }
 

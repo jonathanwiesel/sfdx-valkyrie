@@ -1,17 +1,46 @@
 import { MetadataModel } from './base';
+import { MetadataModelBuilder } from './builder';
 
 export class ProcessModel extends MetadataModel {
 
-    public static createModelsFromDescribe(objDescribe: any, normalizedObjects: Array<string>): Array<ProcessModel> {
-        
-        let models = [];
+    public static metadataObj = 'FlowDefinition'; 
+    public static functionalName = 'processes';
 
-        const sobj = ProcessModel.getRelatedSObj(objDescribe);
+    private static secondaryMetadataObj = 'Flow';
+
+    public static async createModelsFromDefinitionDescribe(objDescribes: Array<any>, builder: MetadataModelBuilder, filteringObjects: Array<string> = []): Promise<Array<MetadataModel>> {
         
-        models.push(new ProcessModel(sobj, objDescribe, normalizedObjects));
+        let activeProcesses = [];
+
+        for (let objDescribe of objDescribes) {
+            if (objDescribe.activeVersionNumber) {
+                activeProcesses.push(`${objDescribe.fullName}-${objDescribe.activeVersionNumber}`);
+            }
+        }
+
+        const secondBuilder = new MetadataModelBuilder(builder.ux, builder.org, ProcessModel.secondaryMetadataObj);
+
+        const models = await secondBuilder.fetchAndCreateMetadataModels(activeProcesses, ProcessModel.createModelsFromFlowDescribe, filteringObjects);
 
         return models;
     }
+
+
+    public static async createModelsFromFlowDescribe(objDescribes: Array<any>, builder: MetadataModelBuilder, filteringObjects: Array<string> = []): Promise<Array<ProcessModel>> {
+        
+        let models = [];
+        let sobj: string;
+
+        for (let objDescribe of objDescribes) {
+
+            sobj = ProcessModel.getRelatedSObj(objDescribe);
+        
+            models.push(new ProcessModel(sobj, objDescribe, filteringObjects));
+        }
+        
+        return models;
+    }
+
 
     constructor(sobjName: any, objMetadata: any, private filteringObjects: Array<string>) {
         super(sobjName, objMetadata);

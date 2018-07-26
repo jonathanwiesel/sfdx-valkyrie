@@ -1,21 +1,28 @@
 import { MetadataModel } from './base';
+import { MetadataModelBuilder } from './builder';
 
 export class ValidationRuleModel extends MetadataModel {
 
-    public static createModelsFromDescribe(objDescribe: any): Array<ValidationRuleModel> {
+    public static metadataObj = 'CustomObject'; 
+    public static functionalName = 'validation rules';
+
+    public static async createModelsFromDescribe(objDescribes: Array<any>, builder: MetadataModelBuilder): Promise<Array<ValidationRuleModel>> {
 
         let models = [];
 
-        if (objDescribe.validationRules) {
+        for (let objDescribe of objDescribes) {
 
-            let rules = objDescribe.validationRules;
+            if (objDescribe.validationRules) {
 
-            if (!(rules instanceof Array)) {
-                rules = [rules];
-            }
+                let rules = objDescribe.validationRules;
 
-            for (let rule of rules) {
-                models.push(new ValidationRuleModel(objDescribe.fullName, rule));
+                if (!(rules instanceof Array)) {
+                    rules = [rules];
+                }
+
+                for (let rule of rules) {
+                    models.push(new ValidationRuleModel(objDescribe.fullName, rule));
+                }
             }
         }
 

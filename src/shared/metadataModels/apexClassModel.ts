@@ -1,11 +1,16 @@
 import { MetadataModel } from './base';
+import { MetadataModelBuilder } from './builder';
 
 export class ApexClassModel extends MetadataModel {
 
-    public static createModelsFromDescribe(objDescribe: any): Array<ApexClassModel> {
+    public static metadataObj = 'ApexClass'; 
+    public static functionalName = 'apex classes';
+
+    public static async createModelsFromDescribe(objDescribes: Array<any>, builder: MetadataModelBuilder): Promise<Array<ApexClassModel>> {
 
         let models = [];
 
+        console.log(objDescribes);
 
         return models;
     }

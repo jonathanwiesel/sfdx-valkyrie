@@ -1,6 +1,6 @@
 import { SfdxCommand } from '@salesforce/command';
 import { BypasserScanner } from '../../../shared/bypasserScanner';
-import { MetadataModel } from  '../../../shared/metadataModels/base';
+import { MetadataModelBuilder } from '../../../shared/metadataModels/builder';
 import { ValidationRuleModel } from  '../../../shared/metadataModels/validRuleModel';
 
 
@@ -22,24 +22,17 @@ sfdx vlk:bypasser:validrules -u someOrg -n Other_Bypasser_Name__c
 
     public async run(): Promise<any> {
 
-        let filters;
+        let filters = [];
         
         if (this.flags.objects) {
             filters = this.flags.objects.split(',');
         }
 
-        const bypasserScanner = new BypassValidRulesImpl(this.ux, this.org, this.flags.name, filters, filters);
+        const metaBuilder = new MetadataModelBuilder(this.ux, this.org, ValidationRuleModel.metadataObj);
+        const bypasserScanner = new BypasserScanner(this.ux, this.flags.name, ValidationRuleModel.functionalName, filters);
+        
+        const models = await metaBuilder.fetchAndCreateMetadataModels(filters, ValidationRuleModel.createModelsFromDescribe);
 
-        await bypasserScanner.exec();
-    }
-}
-
-class BypassValidRulesImpl extends BypasserScanner {
-
-    protected functionalName = 'validation rules';
-    protected metadataObj = 'CustomObject';
-
-    protected analizeObject(objDescribe: any): Array<MetadataModel> {
-        return ValidationRuleModel.createModelsFromDescribe(objDescribe);
+        await bypasserScanner.exec(models);
     }
 }

@@ -1,6 +1,7 @@
 import { SfdxCommand } from '@salesforce/command';
 import { BypasserScanner } from '../../../shared/bypasserScanner'; 
-import { MetadataModel } from  '../../../shared/metadataModels/base';
+import { MetadataModel } from '../../../shared/metadataModels/base';
+import { MetadataModelBuilder } from '../../../shared/metadataModels/builder';
 import { TriggerModel } from  '../../../shared/metadataModels/triggerModel';
 import { ApexClassModel } from  '../../../shared/metadataModels/apexClassModel';
 
@@ -23,44 +24,31 @@ sfdx vlk:bypasser:triggers -u someOrg -n Other_Bypasser_Name__c
 
     public async run(): Promise<any> {
 
-        let bypassScanner: BypasserScanner;
+        let metadataObj: string;
+        let functionalName: string;
+        let filters = [];
+        let relatedObjs = [];
+        let creatorMethod: (objDescribes: Array<any>, builder: MetadataModelBuilder, additionalInfo?: any) => Promise<Array<MetadataModel>>;
 
         if (this.flags.factory) {
 
-            bypassScanner = new BypassTriggersFactoryImpl(this.ux, this.org, this.flags.name, [this.flags.factory]);
+            metadataObj = ApexClassModel.metadataObj;
+            functionalName = ApexClassModel.functionalName;
+            filters = this.flags.factory.split(',');
 
         } else {
 
-            let filters;
-        
-            if (this.flags.objects) {
-                filters = this.flags.objects.split(',');
-            }
-
-            bypassScanner = new BypassTriggersImpl(this.ux, this.org, this.flags.name, null, filters);
+            metadataObj = TriggerModel.metadataObj;
+            functionalName = TriggerModel.functionalName;
+            relatedObjs = this.flags.objects ? this.flags.objects.split(',') : [];
         }
 
-        await bypassScanner.exec();
-    }
-}
 
-class BypassTriggersImpl extends BypasserScanner {
+        const metaBuilder = new MetadataModelBuilder(this.ux, this.org, metadataObj);
+        const bypasserScanner = new BypasserScanner(this.ux, this.flags.name, functionalName, relatedObjs);
+        
+        const models = await metaBuilder.fetchAndCreateMetadataModels(filters, creatorMethod, relatedObjs);
 
-    protected functionalName = 'triggers';
-    protected metadataObj = 'ApexTrigger';
-
-    protected analizeObject(objDescribe: any): Array<MetadataModel> {
-        return TriggerModel.createModelsFromDescribe(objDescribe);
-    }
-}
-
-
-class BypassTriggersFactoryImpl extends BypasserScanner {
-
-    protected functionalName = 'trigger factory';
-    protected metadataObj = 'ApexClass';
-
-    protected analizeObject(objDescribe: any): Array<MetadataModel>  {
-        return ApexClassModel.createModelsFromDescribe(objDescribe);
+        await bypasserScanner.exec(models);
     }
 }

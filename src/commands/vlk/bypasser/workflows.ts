@@ -1,6 +1,6 @@
 import { SfdxCommand } from '@salesforce/command';
 import { BypasserScanner } from '../../../shared/bypasserScanner'; 
-import { MetadataModel } from  '../../../shared/metadataModels/base';
+import { MetadataModelBuilder } from '../../../shared/metadataModels/builder';
 import { WorkflowModel } from  '../../../shared/metadataModels/workflowModel';
 
 export default class BypassWorkflowRules extends SfdxCommand {
@@ -21,24 +21,17 @@ sfdx vlk:bypasser:workflows -u someOrg -n Other_Bypasser_Name__c
 
     public async run(): Promise<any> {
 
-        let filters;
+        let filters = [];
         
         if (this.flags.objects) {
             filters = this.flags.objects.split(',');
         }
 
-        const bypasserScanner = new BypassWorkflowRulesImpl(this.ux, this.org, this.flags.name, filters, filters);
+        const metaBuilder = new MetadataModelBuilder(this.ux, this.org, WorkflowModel.metadataObj);
+        const bypasserScanner = new BypasserScanner(this.ux, this.flags.name, WorkflowModel.functionalName, filters);
+        
+        const models = await metaBuilder.fetchAndCreateMetadataModels(filters, WorkflowModel.createModelsFromDescribe);
 
-        await bypasserScanner.exec();
-    }
-}
-
-class BypassWorkflowRulesImpl extends BypasserScanner {
-
-    protected functionalName = 'workflow rules';
-    protected metadataObj = 'Workflow';
-
-    protected analizeObject(objDescribe: any): Array<MetadataModel> {
-        return WorkflowModel.createModelsFromDescribe(objDescribe);
+        await bypasserScanner.exec(models);
     }
 }

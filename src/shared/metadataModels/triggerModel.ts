@@ -1,12 +1,16 @@
 import { MetadataModel } from './base';
+import { MetadataModelBuilder } from './builder';
 
 export class TriggerModel extends MetadataModel {
 
-    public static createModelsFromDescribe(objDescribe: any): Array<TriggerModel> {
+    public static metadataObj = 'ApexTrigger'; 
+    public static functionalName = 'triggers';
+
+    public static async createModelsFromDescribe(objDescribes: Array<any>, builder: MetadataModelBuilder): Promise<Array<TriggerModel>> {
 
         let models = [];
 
-        console.log(objDescribe);
+        console.log(objDescribes);
 
         return models;
     }
