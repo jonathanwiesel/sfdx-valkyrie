@@ -1,17 +1,17 @@
 import { SfdxCommand } from '@salesforce/command';
 import { BypasserScanner } from '../../../shared/bypasserScanner'; 
-import { MetadataModel } from '../../../shared/metadataModels/base';
 import { MetadataModelBuilder } from '../../../shared/metadataModels/builder';
 import { TriggerModel } from  '../../../shared/metadataModels/triggerModel';
 import { ApexClassModel } from  '../../../shared/metadataModels/apexClassModel';
 
-export default class BypassValidRules extends SfdxCommand {
+export default class BypassTriggers extends SfdxCommand {
 
-    public static description = 'Scan for bypassers in triggers';
+    public static description = 'Scan for bypassers in triggers / trigger factories';
     public static examples = [`
 sfdx vlk:bypasser:triggers -u someOrg
 sfdx vlk:bypasser:triggers -u someOrg -o Account,Contact
 sfdx vlk:bypasser:triggers -u someOrg -n Other_Bypasser_Name__c
+sfdx vlk:bypasser:triggers -u someOrg -f S4GTriggerFactory
     `];
 
     protected static requiresUsername = true;
@@ -24,30 +24,29 @@ sfdx vlk:bypasser:triggers -u someOrg -n Other_Bypasser_Name__c
 
     public async run(): Promise<any> {
 
-        let metadataObj: string;
+        let metadataModel;
         let functionalName: string;
         let filters = [];
         let relatedObjs = [];
-        let creatorMethod: (objDescribes: Array<any>, builder: MetadataModelBuilder, additionalInfo?: any) => Promise<Array<MetadataModel>>;
 
         if (this.flags.factory) {
 
-            metadataObj = ApexClassModel.metadataObj;
+            metadataModel = ApexClassModel;
             functionalName = ApexClassModel.functionalName;
             filters = this.flags.factory.split(',');
+            relatedObjs = filters;
 
         } else {
 
-            metadataObj = TriggerModel.metadataObj;
+            metadataModel = TriggerModel;
             functionalName = TriggerModel.functionalName;
             relatedObjs = this.flags.objects ? this.flags.objects.split(',') : [];
         }
 
-
-        const metaBuilder = new MetadataModelBuilder(this.ux, this.org, metadataObj);
+        const metaBuilder = new MetadataModelBuilder(this.ux, this.org, metadataModel);
         const bypasserScanner = new BypasserScanner(this.ux, this.flags.name, functionalName, relatedObjs);
         
-        const models = await metaBuilder.fetchAndCreateMetadataModels(filters, creatorMethod, relatedObjs);
+        const models = await metaBuilder.fetchAndCreateMetadataModels(filters, relatedObjs);
 
         await bypasserScanner.exec(models);
     }

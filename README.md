@@ -82,6 +82,7 @@ EXAMPLE
   sfdx vlk:bypasser:triggers -u someOrg
   sfdx vlk:bypasser:triggers -u someOrg -o Account,Contact
   sfdx vlk:bypasser:triggers -u someOrg -n Other_Bypasser_Name__c
+  sfdx vlk:bypasser:triggers -u someOrg -f S4GTriggerFactory
 ```
 
 _See code: [src/commands/vlk/bypasser/triggers.ts](https://gitlab.com/jonathanwiesel/valkyrie/blob/v0.0.1/src/commands/vlk/bypasser/triggers.ts)_
