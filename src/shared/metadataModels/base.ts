@@ -1,10 +1,10 @@
 export abstract class MetadataModel {
 
-    public metadataName: string;
+    public static metadataObj: string; 
+    public static functionalName: string;
+    public static useToolingApi: boolean;
 
-    constructor(public sobjName: any, protected objMetadata: any) {
-        this.metadataName = objMetadata.fullName;
-    }
+    constructor(public sobjName: any, protected objMetadata: any, public metadataName: string) {}
 
     public abstract filterObject(): boolean;
 

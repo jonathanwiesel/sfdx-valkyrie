@@ -21,7 +21,7 @@ export class WorkflowModel extends MetadataModel {
                 }
 
                 for (let rule of rules) {
-                    models.push(new WorkflowModel(objDescribe.fullName, rule));
+                    models.push(new WorkflowModel(objDescribe.fullName, rule, rule.fullName));
                 }
             }
         }

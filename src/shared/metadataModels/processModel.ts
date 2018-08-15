@@ -1,14 +1,12 @@
 import { MetadataModel } from './base';
 import { MetadataModelBuilder } from './builder';
 
-export class ProcessModel extends MetadataModel {
+export class ProcessDefinitionModel extends MetadataModel {
 
     public static metadataObj = 'FlowDefinition'; 
-    public static functionalName = 'processes';
+    public static functionalName = 'process definitions';
 
-    private static secondaryMetadataObj = 'Flow';
-
-    public static async createModelsFromDefinitionDescribe(objDescribes: Array<any>, builder: MetadataModelBuilder, filteringObjects: Array<string> = []): Promise<Array<MetadataModel>> {
+    public static async createModelsFromDescribe(objDescribes: Array<any>, builder: MetadataModelBuilder, filteringObjects: Array<string> = []): Promise<Array<MetadataModel>> {
         
         let activeProcesses = [];
 
@@ -18,15 +16,29 @@ export class ProcessModel extends MetadataModel {
             }
         }
 
-        const secondBuilder = new MetadataModelBuilder(builder.ux, builder.org, ProcessModel.secondaryMetadataObj);
+        const secondBuilder = new MetadataModelBuilder(builder.ux, builder.org, ProcessModel);
 
-        const models = await secondBuilder.fetchAndCreateMetadataModels(activeProcesses, ProcessModel.createModelsFromFlowDescribe, filteringObjects);
+        const models = await secondBuilder.fetchAndCreateMetadataModels(activeProcesses, filteringObjects);
 
         return models;
     }
 
+    public filterObject(): boolean {
+        return false;
+    }
 
-    public static async createModelsFromFlowDescribe(objDescribes: Array<any>, builder: MetadataModelBuilder, filteringObjects: Array<string> = []): Promise<Array<ProcessModel>> {
+    public doesHaveBypasser(bypasserName: string): boolean {
+        return false;
+    }
+}
+
+
+export class ProcessModel extends MetadataModel {
+
+    public static metadataObj = 'Flow'; 
+    public static functionalName = 'processes';
+
+    public static async createModelsFromDescribe(objDescribes: Array<any>, builder: MetadataModelBuilder, filteringObjects: Array<string> = []): Promise<Array<ProcessModel>> {
         
         let models = [];
         let sobj: string;
@@ -43,7 +55,7 @@ export class ProcessModel extends MetadataModel {
 
 
     constructor(sobjName: any, objMetadata: any, private filteringObjects: Array<string>) {
-        super(sobjName, objMetadata);
+        super(sobjName, objMetadata, objMetadata.fullName);
     }
 
     /**

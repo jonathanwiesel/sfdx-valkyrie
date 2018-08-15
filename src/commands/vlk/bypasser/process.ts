@@ -1,7 +1,7 @@
 import { SfdxCommand } from '@salesforce/command';
 import { BypasserScanner } from '../../../shared/bypasserScanner';
 import { MetadataModelBuilder } from '../../../shared/metadataModels/builder';
-import { ProcessModel } from  '../../../shared/metadataModels/processModel';
+import { ProcessDefinitionModel } from  '../../../shared/metadataModels/processModel';
 
 export default class BypassProcess extends SfdxCommand {
 
@@ -27,10 +27,10 @@ sfdx vlk:bypasser:process -u someOrg -n Other_Bypasser_Name__c
             filters = this.flags.objects.split(',').map(item => item.toLowerCase());
         }
 
-        const metaBuilder = new MetadataModelBuilder(this.ux, this.org, ProcessModel.metadataObj);
-        const bypasserScanner = new BypasserScanner(this.ux, this.flags.name, ProcessModel.functionalName, filters);
+        const metaBuilder = new MetadataModelBuilder(this.ux, this.org, ProcessDefinitionModel);
+        const bypasserScanner = new BypasserScanner(this.ux, this.flags.name, ProcessDefinitionModel.functionalName, filters);
         
-        const models = await metaBuilder.fetchAndCreateMetadataModels([], ProcessModel.createModelsFromDefinitionDescribe, filters);
+        const models = await metaBuilder.fetchAndCreateMetadataModels([], filters);
 
         await bypasserScanner.exec(models);
     }

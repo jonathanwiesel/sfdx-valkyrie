@@ -21,7 +21,7 @@ export class ValidationRuleModel extends MetadataModel {
                 }
 
                 for (let rule of rules) {
-                    models.push(new ValidationRuleModel(objDescribe.fullName, rule));
+                    models.push(new ValidationRuleModel(objDescribe.fullName, rule, rule.fullName));
                 }
             }
         }

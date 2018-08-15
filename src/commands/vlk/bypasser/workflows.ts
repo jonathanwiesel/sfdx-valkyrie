@@ -27,10 +27,10 @@ sfdx vlk:bypasser:workflows -u someOrg -n Other_Bypasser_Name__c
             filters = this.flags.objects.split(',');
         }
 
-        const metaBuilder = new MetadataModelBuilder(this.ux, this.org, WorkflowModel.metadataObj);
+        const metaBuilder = new MetadataModelBuilder(this.ux, this.org, WorkflowModel);
         const bypasserScanner = new BypasserScanner(this.ux, this.flags.name, WorkflowModel.functionalName, filters);
         
-        const models = await metaBuilder.fetchAndCreateMetadataModels(filters, WorkflowModel.createModelsFromDescribe);
+        const models = await metaBuilder.fetchAndCreateMetadataModels(filters);
 
         await bypasserScanner.exec(models);
     }

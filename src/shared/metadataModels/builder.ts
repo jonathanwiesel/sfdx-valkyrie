@@ -8,9 +8,9 @@ export class MetadataModelBuilder {
     private conn: Connection;
     private totalObjs: number;
 
-    constructor(public ux: UX, public org: Org, public metadataType: string) {}
+    constructor(public ux: UX, public org: Org, public metadataModel: any) {}
 
-    public async fetchAndCreateMetadataModels(objectsToFiler: Array<string>, creatorMethod: (objDescribes: Array<any>, builder: MetadataModelBuilder, additionalInfo?: any) => Promise<Array<MetadataModel>>, additionalInfo?: any): Promise<Array<MetadataModel>> {
+    public async fetchAndCreateMetadataModels(objectsToFiler: Array<string>, additionalInfo?: any): Promise<Array<MetadataModel>> {
 
         this.totalObjs = 0;
         this.conn = await this.org.getConnection();
@@ -21,9 +21,9 @@ export class MetadataModelBuilder {
         
         const describers = await this.getObjectDescribers(objGroups);
         
-        const models = await this.createModelsFromDescribers(describers, creatorMethod, additionalInfo);
+        const models = await this.metadataModel.createModelsFromDescribe(describers, this, additionalInfo);
 
-        return 
+        return models;
     } 
 
      /**
@@ -31,7 +31,7 @@ export class MetadataModelBuilder {
      */
     private async getSobjectsToSearch(): Promise<Array<string>> {
 
-        const types = [{ type: this.metadataType, folder: null }];
+        const types = [{ type: this.metadataModel.metadataObj, folder: null }];
 
         this.ux.startSpinner('Getting available objects');
         const sobjsData = await this.conn.metadata.list(types, await this.org.retrieveMaxApiVersion());
@@ -52,7 +52,7 @@ export class MetadataModelBuilder {
         while (this.totalObjs < objData.length) {
 
             let objGroup = [];
-            for (let i = 0; i < this.METADATA_READ_MAX_SIZE && this.totalObjs < objData.length; i++) {
+            for (let i = 0; (this.metadataModel.toolingApiConfig !== undefined || i < this.METADATA_READ_MAX_SIZE) && this.totalObjs < objData.length; i++) {
                 objGroup.push(objData[this.totalObjs]);
                 this.totalObjs++;
             }
@@ -67,6 +67,7 @@ export class MetadataModelBuilder {
     /** 
      * Obtain detail objects and process them 
      * @param objGroups - groups to get detail from
+     * @param useToolingApi - wether the tooling api should be used depending on the type being fetched
      */
     private async getObjectDescribers(objGroups: Array<Array<string>>): Promise<Array<any>> {
         
@@ -80,7 +81,9 @@ export class MetadataModelBuilder {
 
             this.ux.setSpinnerStatus(`${loopCounter}/${this.totalObjs}`);
 
-            let objDescribes = await this.conn.metadata.read(this.metadataType, objGroup);
+            let objDescribes = await (this.metadataModel.toolingApiConfig === undefined ? 
+                                this.conn.metadata.read(this.metadataModel.metadataObj, objGroup) :
+                                this.retrieveObjectData(objGroup));
             
             if (!(objDescribes instanceof Array)) {
                 objDescribes = [objDescribes];
@@ -98,21 +101,19 @@ export class MetadataModelBuilder {
 
 
     /**
-     * Create model instances from obtained describers
-     * @param describers - object describers to transform to models
-     * @param creatorMethod - creator static method from model classes to create instances based on describers
-     * @param additionalInfo - additional info to be passed to the creator method
+     * Retrieve objects data via the Tooling API
+     * @param objGroup - group to get detail from
      */
-    private async createModelsFromDescribers(describers: Array<any>, creatorMethod: (objDescribes: Array<any>, builder: MetadataModelBuilder, additionalInfo?: any) => Promise<Array<MetadataModel>>, additionalInfo: any): Promise<Array<MetadataModel>> {
+    private async retrieveObjectData(objGroup: Array<string>): Promise<any> {
 
-        let models = [];
-            
-        const createdModels = await creatorMethod(describers, this, additionalInfo);
+        return new Promise((resolve, reject) => {
 
-        for (let model of createdModels) {
-            models.push(model);
-        }
-
-        return models;
+            this.conn.tooling.sobject(this.metadataModel.metadataObj)
+                .find(this.metadataModel.toolingApiConfig.filter(objGroup), this.metadataModel.toolingApiConfig.fields)
+                .execute(null, function(err, records) {
+                    if (err) reject(err);
+                    else resolve(records); 
+                });
+        });
     }
 }

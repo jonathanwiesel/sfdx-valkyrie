@@ -28,10 +28,10 @@ sfdx vlk:bypasser:validrules -u someOrg -n Other_Bypasser_Name__c
             filters = this.flags.objects.split(',');
         }
 
-        const metaBuilder = new MetadataModelBuilder(this.ux, this.org, ValidationRuleModel.metadataObj);
+        const metaBuilder = new MetadataModelBuilder(this.ux, this.org, ValidationRuleModel);
         const bypasserScanner = new BypasserScanner(this.ux, this.flags.name, ValidationRuleModel.functionalName, filters);
         
-        const models = await metaBuilder.fetchAndCreateMetadataModels(filters, ValidationRuleModel.createModelsFromDescribe);
+        const models = await metaBuilder.fetchAndCreateMetadataModels(filters);
 
         await bypasserScanner.exec(models);
     }
