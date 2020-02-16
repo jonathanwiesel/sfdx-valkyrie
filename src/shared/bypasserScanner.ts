@@ -3,7 +3,7 @@ import { MetadataModel } from  './metadataModels/base';
 
 export class BypasserScanner {
 
-    private DEFAULT_BYPASSER = 'bypasser__c';
+    private DEFAULT_BYPASSER = 's4gbp__bypasser__c';
 
     private activeObjs = 0;
     private invalidObjs = [];
