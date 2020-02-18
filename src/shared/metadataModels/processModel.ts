@@ -45,9 +45,12 @@ export class ProcessModel extends MetadataModel {
 
         for (let objDescribe of objDescribes) {
 
-            sobj = ProcessModel.getRelatedSObj(objDescribe);
+            if (objDescribe.processType === 'Workflow') {
+
+                sobj = ProcessModel.getRelatedSObj(objDescribe);
         
-            models.push(new ProcessModel(sobj, objDescribe, filteringObjects));
+                models.push(new ProcessModel(sobj, objDescribe, filteringObjects));
+            }
         }
         
         return models;
