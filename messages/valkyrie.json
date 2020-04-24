@@ -1,0 +1,13 @@
+{
+    "bypassWorkflowCmdDescription": "Scan for bypassers in workflow rules",
+    "bypassValidRulesCmdDescription": "Scan for bypassers in validation rules",
+    "bypassProcessCmdDescription": "Scan for bypassers in processes",
+    "objectFilterFlagDescript": "search in specified objects. Separate by comma if many",
+    "bypasserNameFlagDescript": "specify the bypasser's custom setting object API name to search",
+    "bypassScanningMsg": "Looking for %METADATA% with %BYPASSERNAME% bypasser in %OBJECTS%",
+    "allObjectsMsg": "all objects",
+    "bypassResultsMsg": "There are %INVALID%/%ACTIVE% active, non-managed, %METADATA% without bypassers.",
+    "gettingObjsMsg": "Getting available objects",
+    "gettingObjDetailsMsg": "Getting objects details"
+
+}

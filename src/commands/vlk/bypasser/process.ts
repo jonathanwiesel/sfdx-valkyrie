@@ -1,22 +1,27 @@
-import { SfdxCommand } from '@salesforce/command';
+import { flags, SfdxCommand } from '@salesforce/command';
+import { Messages } from '@salesforce/core';
 import { BypasserScanner } from '../../../shared/bypasserScanner';
 import { MetadataModelBuilder } from '../../../shared/metadataModels/builder';
 import { ProcessDefinitionModel } from  '../../../shared/metadataModels/processModel';
 
+Messages.importMessagesDirectory(__dirname);
+
+const messages = Messages.loadMessages('sfdx-valkyrie', 'valkyrie');
+
 export default class BypassProcess extends SfdxCommand {
 
-    public static description = 'Scan for bypassers in processes';
+    public static description = messages.getMessage('bypassProcessCmdDescription');
     public static examples = [`
-sfdx vlk:bypasser:process -u someOrg
-sfdx vlk:bypasser:process -u someOrg -o Account,Contact
-sfdx vlk:bypasser:process -u someOrg -n Other_Bypasser_Name__c
+        sfdx vlk:bypasser:process -u someOrg
+        sfdx vlk:bypasser:process -u someOrg -o Account,Contact
+        sfdx vlk:bypasser:process -u someOrg -n Bypasser_API_Name__c
     `];
 
     protected static requiresUsername = true;
-    protected static requiresProject = false;
+
     protected static flagsConfig = {
-        objects: { char: 'o', type: 'string', description: 'search in specified objects. Separate by comma if many' },
-        name: { char: 'n', type: 'string', description: 'specify the bypasser name to search. s4gbp__Bypasser__c is the default' }
+        objects: flags.string({char: 'o', description: messages.getMessage('objectFilterFlagDescript')}),
+        name: flags.string({char: 'n', description: messages.getMessage('bypasserNameFlagDescript'), required: true})
     };
 
     public async run(): Promise<any> {
@@ -32,6 +37,6 @@ sfdx vlk:bypasser:process -u someOrg -n Other_Bypasser_Name__c
         
         const models = await metaBuilder.fetchAndCreateMetadataModels([], filters);
 
-        await bypasserScanner.exec(models);
+        return await bypasserScanner.exec(models);
     }
 }

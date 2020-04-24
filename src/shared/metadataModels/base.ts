@@ -6,7 +6,11 @@ export abstract class MetadataModel {
 
     constructor(public sobjName: any, protected objMetadata: any, public metadataName: string) {}
 
-    public abstract filterObject(): boolean;
+    public filterObject(): boolean {
+        return true;
+    };
 
-    public abstract doesHaveBypasser(bypasserName: string): boolean;
+    public doesHaveBypasser(bypasserName: string): boolean {
+        return true;
+    };
 }
