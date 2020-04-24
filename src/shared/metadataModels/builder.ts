@@ -1,5 +1,10 @@
-import { UX, Org, Connection } from '@salesforce/core'; 
+import { Org, Connection, Messages } from '@salesforce/core';
+import { UX } from '@salesforce/command';  
 import { MetadataModel } from  './base';
+
+Messages.importMessagesDirectory(__dirname);
+
+const messages = Messages.loadMessages('sfdx-valkyrie', 'valkyrie');
 
 export class MetadataModelBuilder {
 
@@ -33,7 +38,7 @@ export class MetadataModelBuilder {
 
         const types = [{ type: this.metadataModel.metadataObj, folder: null }];
 
-        this.ux.startSpinner('Getting available objects');
+        this.ux.startSpinner(messages.getMessage('gettingObjsMsg'));
         const sobjsData = await this.conn.metadata.list(types, await this.org.retrieveMaxApiVersion());
         this.ux.stopSpinner();
 
@@ -74,7 +79,7 @@ export class MetadataModelBuilder {
         let loopCounter = 0;
         let describers = [];
 
-        this.ux.startSpinner('Getting objects details');
+        this.ux.startSpinner(messages.getMessage('gettingObjDetailsMsg'));
         for (const objGroup of objGroups) {
 
             loopCounter += objGroup.length;

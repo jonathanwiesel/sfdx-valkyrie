@@ -1,28 +1,39 @@
-import { UX } from '@salesforce/core'; 
+import { UX } from '@salesforce/command';
+import { Messages } from '@salesforce/core';
 import { MetadataModel } from  './metadataModels/base';
 
-export class BypasserScanner {
+Messages.importMessagesDirectory(__dirname);
 
-    private DEFAULT_BYPASSER = 's4gbp__bypasser__c';
+const messages = Messages.loadMessages('sfdx-valkyrie', 'valkyrie');
+
+export class BypasserScanner {
 
     private activeObjs = 0;
     private invalidObjs = [];
     
     constructor(private ux: UX, private bypasserName: string, private functionalName: string, private relatedSObjsToFilter: Array<string> = []) {
 
-        if (!this.bypasserName) {
-            this.bypasserName = this.DEFAULT_BYPASSER;
-        }
-
         this.bypasserName = this.bypasserName.toLowerCase();
 
-        this.ux.styledHeader(`Looking for ${this.functionalName} with "${this.bypasserName}" bypasser in ${this.relatedSObjsToFilter.length ? this.relatedSObjsToFilter.join(',') : 'all objects'}`);
+        const msgReplacers = {
+            "%METADATA%": this.functionalName, 
+            "%BYPASSERNAME%": this.bypasserName, 
+            "%OBJECTS%": this.relatedSObjsToFilter.length ? 
+                        this.relatedSObjsToFilter.join(',') : 
+                        messages.getMessage('allObjectsMsg')
+        };
+
+        const lookingMsg = messages.getMessage('bypassScanningMsg').replace(/%\w+%/g, function(all) {
+            return msgReplacers[all] || all;
+         });
+
+         this.ux.styledHeader(lookingMsg);
     }
 
     /** 
      * Routing method that orchestrates the logic 
      */
-    public async exec(models: Array<MetadataModel>): Promise<void> {
+    public async exec(models: Array<MetadataModel>): Promise<Array<any>> {
 
         for (let model of models) {
 
@@ -37,25 +48,34 @@ export class BypasserScanner {
         }
 
 
-        await this.printResult();
+        this.printResult();
+
+        return this.invalidObjs;
     } 
 
     /**
      * Print the results found
      */
-    private async printResult(): Promise<void> {
+    private printResult(): void {
 
-        this.ux.styledHeader(`There are ${this.invalidObjs.length}/${this.activeObjs} active, non-managed, ${this.functionalName} without bypassers.`);
+        const msgReplacers = {
+            "%INVALID%": this.invalidObjs.length, 
+            "%ACTIVE%": this.activeObjs, 
+            "%METADATA%": this.functionalName
+        };
+
+        const resultMsg = messages.getMessage('bypassResultsMsg').replace(/%\w+%/g, function(all) {
+            return msgReplacers[all];
+         });
+
+        this.ux.styledHeader(resultMsg);
         
-        if (this.invalidObjs.length && await this.ux.confirm('Want to see the detail?')) {
-
-            this.ux.table(this.invalidObjs, {
-                columns: [
-                    { key: 'sobjName' },
-                    { key: 'metadataName' }
-                ]
-            });
-        }
+        this.ux.table(this.invalidObjs, {
+            columns: [
+                { key: 'sobjName' },
+                { key: 'metadataName' }
+            ]
+        });
     }
     
 }

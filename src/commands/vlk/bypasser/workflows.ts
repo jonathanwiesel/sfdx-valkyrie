@@ -1,22 +1,27 @@
-import { SfdxCommand } from '@salesforce/command';
+import { flags, SfdxCommand } from '@salesforce/command';
+import { Messages } from '@salesforce/core';
 import { BypasserScanner } from '../../../shared/bypasserScanner'; 
 import { MetadataModelBuilder } from '../../../shared/metadataModels/builder';
 import { WorkflowModel } from  '../../../shared/metadataModels/workflowModel';
 
+Messages.importMessagesDirectory(__dirname);
+
+const messages = Messages.loadMessages('sfdx-valkyrie', 'valkyrie');
+
 export default class BypassWorkflowRules extends SfdxCommand {
 
-    public static description = 'Scan for bypassers in workflow rules';
+    public static description = messages.getMessage('bypassWorkflowCmdDescription');
     public static examples = [`
-sfdx vlk:bypasser:workflows -u someOrg
-sfdx vlk:bypasser:workflows -u someOrg -o Account,Contact
-sfdx vlk:bypasser:workflows -u someOrg -n Other_Bypasser_Name__c
+        sfdx vlk:bypasser:workflows -u someOrg
+        sfdx vlk:bypasser:workflows -u someOrg -o Account,Contact
+        sfdx vlk:bypasser:workflows -u someOrg -n Bypasser_API_Name__c
     `];
 
     protected static requiresUsername = true;
-    protected static requiresProject = false;
+
     protected static flagsConfig = {
-        objects: {char: 'o', type: 'string', description: 'search in specified objects. Separate by comma if many'},
-        name: {char: 'n', type: 'string', description: 'specify the bypasser name to search. s4gbp__Bypasser__c is the default'}
+        objects: flags.string({char: 'o', description: messages.getMessage('objectFilterFlagDescript')}),
+        name: flags.string({char: 'n', description: messages.getMessage('bypasserNameFlagDescript'), required: true})
     };
 
     public async run(): Promise<any> {
@@ -32,6 +37,6 @@ sfdx vlk:bypasser:workflows -u someOrg -n Other_Bypasser_Name__c
         
         const models = await metaBuilder.fetchAndCreateMetadataModels(filters);
 
-        await bypasserScanner.exec(models);
+        return await bypasserScanner.exec(models);
     }
 }

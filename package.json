@@ -4,28 +4,27 @@
   "author": "Jonathan Wiesel @jonathanwiesel",
   "bugs": "https://github.com/jonathanwiesel/sfdx-valkyrie/issues",
   "dependencies": {
-    "@oclif/command": "1",
-    "@oclif/config": "1",
-    "@oclif/errors": "1",
-    "@salesforce/command": "0.1.6",
-    "tslib": "1"
+    "@oclif/command": "^1",
+    "@oclif/config": "^1",
+    "@oclif/errors": "^1",
+    "@salesforce/command": "^2",
+    "@salesforce/core": "^2",
+    "tslib": "^1"
   },
   "devDependencies": {
-    "@oclif/dev-cli": "1",
-    "@oclif/plugin-help": "1",
+    "@oclif/dev-cli": "^1",
+    "@oclif/plugin-help": "^2",
     "@oclif/test": "^1",
-    "@salesforce/dev-config": "1.1.0",
-    "@types/chai": "4",
-    "@types/jsforce": "1.8.13",
-    "@types/mocha": "5",
-    "@types/node": "10",
+    "@salesforce/dev-config": "1.4.1",
+    "@types/chai": "^4",
+    "@types/mocha": "^5",
+    "@types/node": "^10",
     "chai": "^4",
-    "globby": "8",
+    "globby": "^8",
     "mocha": "^5",
-    "nyc": "^12",
-    "sinon": "5",
-    "ts-node": "6",
-    "typescript": "2.9"
+    "nyc": "^14",
+    "ts-node": "^8",
+    "tslint": "^5"
   },
   "engines": {
     "node": ">=8.0.0"
@@ -43,9 +42,10 @@
   "license": "MIT",
   "oclif": {
     "commands": "./lib/commands",
+    "bin": "sfdx",
     "topics": {
-      "hello": {
-        "description": "Commands to say hello."
+      "bypasser": {
+        "description": "Commands to scan for bypassers"
       }
     },
     "devPlugins": [
