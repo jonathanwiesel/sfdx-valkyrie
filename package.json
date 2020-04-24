@@ -1,6 +1,6 @@
 {
   "name": "sfdx-valkyrie",
-  "version": "0.0.2",
+  "version": "1.0.0",
   "author": "Jonathan Wiesel @jonathanwiesel",
   "bugs": "https://github.com/jonathanwiesel/sfdx-valkyrie/issues",
   "dependencies": {
