@@ -20,7 +20,7 @@ Valkyrie will report on bypass implementation not enforced in the following meta
 # Usage
 <!-- usage -->
 ```sh-session
-$ npm install -g sfdx-valkyrie
+$ sfdx plugins:install sfdx-valkyrie
 $ sfdx COMMAND
 running command...
 $ sfdx (-v|--version|version)
