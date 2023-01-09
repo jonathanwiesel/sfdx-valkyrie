@@ -7,8 +7,8 @@
     "@oclif/command": "^1",
     "@oclif/config": "^1",
     "@oclif/errors": "^1",
-    "@salesforce/command": "^2",
-    "@salesforce/core": "^2",
+    "@salesforce/command": "^5",
+    "@salesforce/core": "^3",
     "tslib": "^1"
   },
   "devDependencies": {
